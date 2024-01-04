@@ -35,21 +35,20 @@ if not is_micropython():
 
 # noinspection PyMethodMayBeStatic
 class PLC(object):
-    __slots__ = ('IPAddress', 'Port', 'ProcessorSlot', 'SocketTimeout', 'Micro800', 'Route', 'conn', 'Offset', 'UDT',
+    __slots__ = ('Port', 'ProcessorSlot', 'SocketTimeout', 'Micro800', 'Route', 'conn', 'Offset', 'UDT',
                  'UDTByName', 'KnownTags', 'TagList', 'ProgramNames', 'StringID', 'StringEncoding', 'CIPTypes')
 
     def __init__(self, ip_address="", slot=0, timeout=5.0, Micro800=False, port=44818):
         """
         Initialize our parameters
         """
-        self.IPAddress = ip_address
+        self.conn = Connection(self)
+        self.conn.IPAddress = ip_address
         self.Port = port
         self.ProcessorSlot = slot
         self.SocketTimeout = timeout
         self.Micro800 = Micro800
         self.Route = None
-
-        self.conn = Connection(self)
 
         self.Offset = 0
         self.UDT = {}
@@ -82,6 +81,19 @@ class PLC(object):
                          0xd7: (8, "TIME", '<Q'),
                          0xda: (1, "STRING", '<B'),
                          0xdf: (8, "LTIME", '<Q')}
+
+    @property
+    def IPAddress(self):
+        """
+        Set the IP address of the PLC
+        """
+        return self.conn.IPAddress
+
+    @IPAddress.setter
+    def IPAddress(self, ip_address):
+        if self.conn.SocketConnected and ip_address != self.conn.IPAddress:
+            self.Close()
+        self.conn.IPAddress = ip_address
 
     @property
     def ConnectionSize(self):
@@ -170,10 +182,7 @@ class PLC(object):
 
         returns Response class (.TagName, .Value, .Status)
         """
-        self.UDT = {}
-        self.KnownTags = {}
-        self.TagList = []
-        self.ProgramNames = []
+        self._cleanup()
         tag_list = self._get_tag_list(allTags)
         updated_list = self._get_udt(tag_list.Value) if tag_list.Value else None
         return Response(None, updated_list, tag_list.Status)
@@ -264,7 +273,18 @@ class PLC(object):
         """
         Close the connection to the PLC
         """
+        self._cleanup()
         return self.conn.close()
+
+    def _cleanup(self):
+        """
+        Clear all of saved data
+        """
+        self.UDT = {}
+        self.UDTByName = {}
+        self.KnownTags = {}
+        self.TagList = []
+        self.ProgramNames = []
 
     def _batch_read(self, tags):
         """

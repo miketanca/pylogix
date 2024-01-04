@@ -29,7 +29,8 @@ class Connection(object):
 
     def __init__(self, parent):
         self.parent = parent
-
+        
+        self.IPAddress = ""
         self.ConnectionSize = None  # Default to try Large, then Small Fwd Open.
         self.Socket = socket.socket()
         self.SocketConnected = False
