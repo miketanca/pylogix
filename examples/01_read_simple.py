@@ -7,8 +7,9 @@ more tags, you wouldn't want to call .Close() every time.
 """
 from pylogix import PLC
 
-comm = PLC()
-comm.IPAddress = '192.168.1.9'
-ret = comm.Read('CurrentScreen')
-print(ret.Value)
-comm.Close()
+if __name__=='__main__':
+    comm = PLC()
+    comm.IPAddress = '127.0.0.1'
+    ret = comm.Read('CurrentScreen')
+    print(ret.Value)
+    comm.Close()
